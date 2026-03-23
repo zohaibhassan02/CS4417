@@ -131,174 +131,155 @@ project/
 └── server.js
 ```
 
-File Overview
-server.js
+---
 
-This is the main entry point of the backend.
+## File Overview
 
-It:
+### `server.js`
+Main entry point of the backend. Loads environment variables, starts the Express server, enables JSON parsing, configures session handling, enables CORS, connects route files, and handles unknown routes and internal errors.
 
-loads environment variables
-starts the Express server
-enables JSON parsing
-configures session handling
-enables CORS
-connects route files
-handles unknown routes and internal errors
-db/database.js
+### `db/database.js`
+Connects to the SQLite database and creates the required tables (`users`, `feedback`) if they do not already exist.
 
-This file connects to the SQLite database and creates the required tables if they do not already exist.
+### `middleware/authMiddleware.js`
+Contains authorization middleware.
+- **`requireAuth`** — Allows access only if a user is logged in
+- **`requireAdmin`** — Allows access only if a logged-in user has the admin role
 
-Tables:
+### `routes/authRoutes.js`
+Handles authentication routes: login, logout, session checking, and password changes.
 
-users
-feedback
-middleware/authMiddleware.js
+### `routes/userRoutes.js`
+Handles user-related routes: admin-only registration and viewing all users.
 
-This file contains authorization middleware.
+### `routes/feedbackRoutes.js`
+Handles secure feedback submission by authenticated users.
 
-requireAuth
+### `seedAdmin.js`
+Used to create the first admin account manually in the database. Required because registration is restricted to admins.
 
-Allows access only if a user is logged in.
+---
 
-requireAdmin
+## Database Tables
 
-Allows access only if a logged-in user has the admin role.
+### `users`
 
-routes/authRoutes.js
+| Field | Description |
+|---|---|
+| `id` | Unique identifier |
+| `username` | User's username |
+| `email` | User's email address |
+| `password_hash` | Hashed password |
+| `role` | `admin` or `user` |
+| `created_at` | Timestamp of account creation |
 
-This file handles authentication-related routes such as login, logout, session checking, and password changes.
+### `feedback`
 
-routes/userRoutes.js
+| Field | Description |
+|---|---|
+| `id` | Unique identifier |
+| `user_id` | ID of the submitting user |
+| `subject` | Feedback subject |
+| `message` | Feedback message body |
+| `created_at` | Timestamp of submission |
 
-This file handles user-related routes such as admin-only registration and viewing all users.
+---
 
-routes/feedbackRoutes.js
+## Route Documentation
 
-This file handles secure feedback submission by authenticated users.
+**Base URL:** `http://localhost:3000`
 
-seedAdmin.js
+---
 
-This file is used to create the first admin account manually in the database.
+### Root
 
-This is necessary because registration is restricted to admins, so the system needs an initial admin user to exist first.
-
-Database Tables
-users
-
-Stores user account information.
-
-Fields:
-
-id
-username
-email
-password_hash
-role
-created_at
-feedback
-
-Stores submitted feedback.
-
-Fields:
-
-id
-user_id
-subject
-message
-created_at
-Route Documentation
-
-Base URL when running locally:
-
-http://localhost:3000
-Root Route
-GET /
-
+#### `GET /`
 Simple test route to confirm the backend is running.
 
-Response:
+**Response:**
+```
+Secure Software Backend Running
+```
 
-"Secure Software Backend Running"
-Authentication Routes
-POST /auth/login
+---
 
+### Authentication Routes
+
+#### `POST /auth/login`
 Logs in a user and creates a session.
 
-Request body
+**Request Body:**
+```json
 {
   "email": "admin@example.com",
   "password": "Admin123"
 }
-Success
-returns user session info
-stores the session on the server
-Failure
-invalid email/password
-too many login attempts
-validation failure
-POST /auth/logout
+```
 
-Logs out the currently authenticated user and destroys the session.
+**Success:** Returns user session info and stores session on server.  
+**Failure:** Invalid credentials, too many login attempts, or validation failure.
 
-Access
-logged-in users only
-POST /auth/change-password
+---
 
-Allows a logged-in user to change their own password.
+#### `POST /auth/logout`
+Logs out the currently authenticated user.
 
-Access
-logged-in users only
-Request body
+**Access:** Logged-in users only
+
+---
+
+#### `POST /auth/change-password`
+Allows a logged-in user to change their password.
+
+**Access:** Logged-in users only
+
+**Request Body:**
+```json
 {
   "oldPassword": "OldPass123",
   "newPassword": "NewPass456"
 }
-Notes
-the logged-in user is identified through the session
-users cannot change another user’s password
-new password must meet validation rules
-GET /auth/me
+```
 
-Returns the currently logged-in user from the session.
+> User is identified via session. Users cannot change another user's password.
 
-Access
-logged-in users only
+---
 
-Useful for:
+#### `GET /auth/me`
+Returns the currently logged-in user. Useful for verifying session authentication.
 
-checking whether session authentication is working
-identifying which user is currently logged in
-User Routes
-POST /users/register
+**Access:** Logged-in users only
 
+---
+
+### User Routes
+
+#### `POST /users/register`
 Registers a new user.
 
-Access
-admin only
-Request body
+**Access:** Admin only
+
+**Request Body:**
+```json
 {
   "username": "newuser",
   "email": "newuser@example.com",
   "password": "StrongPass123",
   "role": "user"
 }
-Notes
-only admins can create users
-password is hashed before storage
-duplicate usernames/emails are rejected
-GET /users/all
+```
 
-Returns a list of all users.
+> Passwords are hashed. Duplicate usernames/emails are rejected.
 
-Access
-admin only
-Notes
-password hashes are not returned
-intended for secure admin viewing of users
+---
 
-Example response:
+#### `GET /users/all`
+Returns all users. Password hashes are **not** returned.
 
+**Access:** Admin only
+
+**Example Response:**
+```json
 {
   "users": [
     {
@@ -310,126 +291,137 @@ Example response:
     }
   ]
 }
-Feedback Routes
-POST /feedback/submit
+```
 
-Allows a logged-in user to submit feedback.
+---
 
-Access
-logged-in users only
-Request body
+### Feedback Routes
+
+#### `POST /feedback/submit`
+Submits feedback from a logged-in user.
+
+**Access:** Logged-in users only
+
+**Request Body:**
+```json
 {
   "subject": "Test feedback",
   "message": "This is a feedback message."
 }
-Notes
-user_id is not accepted from the client
-the backend gets the user ID from the session
-this prevents users from impersonating others
-Authentication and Authorization Summary
-Unauthenticated visitors can:
-access GET /
-Logged-in users can:
-POST /auth/logout
-POST /auth/change-password
-GET /auth/me
-POST /feedback/submit
-Admins can additionally:
-POST /users/register
-GET /users/all
-How to Run This Backend Locally
-1. Clone the repository
-git clone <your-github-repo-url>
-cd <project-folder>
-2. Install dependencies
+```
+
+> `user_id` is **not** accepted from the client — the backend uses the session user ID to prevent impersonation.
+
+---
+
+## Authorization Summary
+
+| Route | Access |
+|---|---|
+| `GET /` | Public |
+| `POST /auth/login` | Public |
+| `POST /auth/logout` | Logged-in users |
+| `POST /auth/change-password` | Logged-in users |
+| `GET /auth/me` | Logged-in users |
+| `POST /feedback/submit` | Logged-in users |
+| `POST /users/register` | Admin only |
+| `GET /users/all` | Admin only |
+
+---
+
+## Running Locally
+
+### 1. Clone the Repository
+```bash
+git clone 
+cd 
+```
+
+### 2. Install Dependencies
+```bash
 npm install
-3. Create a .env file
+```
 
-Create a file named .env in the root of the project and add:
-
+### 3. Create `.env`
+```env
 PORT=3000
 SESSION_SECRET=yourStrongSecretKeyHere
 NODE_ENV=development
+```
 
-Important:
+> ⚠️ Do **not** commit `.env`. Use your own secret.
 
-do not commit the real .env file to GitHub
-use your own strong session secret
-4. Seed the first admin user
-
-Since only admins can register users, the first admin must be created manually.
-
-Run:
-
+### 4. Seed Admin Account
+```bash
 node seedAdmin.js
+```
 
-This will create the initial admin account stored in the database.
-
-Make sure the login credentials in seedAdmin.js are the ones you want to use.
-
-5. Start the server
+### 5. Start the Server
+```bash
 npm start
+```
 
-If everything works, you should see:
-
+**Expected output:**
+```
 Server running on port 3000
 Connected to SQLite database.
-Testing Locally with Postman
-Login as admin
+```
 
+---
+
+## Testing with Postman
+
+**Login**
+```json
 POST /auth/login
+{ "email": "admin@example.com", "password": "Admin123" }
+```
 
-{
-  "email": "admin@example.com",
-  "password": "Admin123"
-}
-Check current session
-
+**Check Session**
+```
 GET /auth/me
+```
 
-Register a new user
-
+**Register User (Admin only)**
+```json
 POST /users/register
+{ "username": "testuser", "email": "testuser@example.com", "password": "TestPass123", "role": "user" }
+```
 
-{
-  "username": "testuser",
-  "email": "testuser@example.com",
-  "password": "TestPass123",
-  "role": "user"
-}
-Submit feedback
-
+**Submit Feedback**
+```json
 POST /feedback/submit
+{ "subject": "Hello", "message": "This is my feedback." }
+```
 
-{
-  "subject": "Hello",
-  "message": "This is my feedback."
-}
-Change password
-
+**Change Password**
+```json
 POST /auth/change-password
+{ "oldPassword": "TestPass123", "newPassword": "NewTestPass456" }
+```
 
-{
-  "oldPassword": "TestPass123",
-  "newPassword": "NewTestPass456"
-}
-Logout
-
+**Logout**
+```
 POST /auth/logout
+```
 
-Notes for Team Members
-Registration is intentionally restricted to admins only.
-Feedback must come from logged-in users.
-Session cookies must be preserved in Postman or the frontend for protected routes to work.
-Password hashes are stored in the database, not raw passwords.
-This backend is intended for educational use and demonstrates secure software principles for a course project.
-Future Improvements
+---
 
-Some improvements that would be valuable in a production system include:
+## Notes for Team Members
 
-CSRF protection
-persistent session store instead of default memory session storage
-stronger audit logging
-account lockout or monitoring after repeated suspicious activity
-HTTPS deployment
-password reset flow
+- Registration is admin-only
+- Feedback requires login
+- Session cookies must be preserved between requests
+- Passwords are hashed and never stored raw
+- All inputs are validated before processing
+
+---
+
+## Future Improvements
+
+- [ ] CSRF protection
+- [ ] Persistent session storage
+- [ ] Audit logging
+- [ ] Account lockout after failed login attempts
+- [ ] HTTPS deployment
+- [ ] Password reset functionality
