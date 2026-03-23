@@ -349,7 +349,6 @@ SESSION_SECRET=yourStrongSecretKeyHere
 NODE_ENV=development
 ```
 
-> ⚠️ Do **not** commit `.env`. Use your own secret.
 
 ### 4. Seed Admin Account
 ```bash
